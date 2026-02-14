@@ -55,6 +55,17 @@ npx ts-node capture-all.ts ./src
 npx ts-node capture-all.ts ./public
 ```
 
+### Running with Sample Data
+
+This repository includes a sample target directory (`sample-target`) and its generated output (`verification`) for demonstration purposes.
+
+```bash
+# Run against the included sample
+npx ts-node capture-all.ts sample-target
+```
+
+Check the `verification` folder to see the results.
+
 ## 3. Features
 
 - **Recursive Search**: Automatically finds all `.html` files in the target directory and subdirectories.
