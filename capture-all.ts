@@ -1,5 +1,5 @@
-import { chromium, devices as playwrightDevices } from "playwright";
 import {
+  chromium,
   devices,
   type Browser,
   type BrowserContext,
@@ -44,7 +44,7 @@ const CUSTOM_DEVICES: Record<string, DeviceDescriptor> = {
 // Helper to get device config
 export function getDeviceConfig(deviceName: string): DeviceDescriptor | null {
   // 1. Check Playwright presets
-  const preset = playwrightDevices[deviceName];
+  const preset = devices[deviceName];
   if (preset) return preset;
 
   // 2. Check Custom Definitions
