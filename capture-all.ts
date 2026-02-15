@@ -1,5 +1,5 @@
 import { chromium, devices as playwrightDevices } from 'playwright';
-import type { Browser, BrowserContext, Page } from 'playwright';
+import type { Browser, BrowserContext, Page, DeviceDescriptor } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as http from 'http';
@@ -11,23 +11,16 @@ import { fileURLToPath } from 'node:url';
 // --- Configuration ---
 const CONCURRENCY_LIMIT = 5; // Max concurrent pages open
 
-// --- Device Definitions ---
-export type DeviceConfig = {
-  viewport: { width: number; height: number };
-  userAgent: string;
-  deviceScaleFactor: number;
-  isMobile: boolean;
-  hasTouch: boolean;
-};
-
 // Custom Device Definitions for iPhone 15/16 if not in Playwright
-const CUSTOM_DEVICES: Record<string, DeviceConfig> = {
+// Explicitly define as DeviceDescriptor to match return type
+const CUSTOM_DEVICES: Record<string, DeviceDescriptor> = {
   'iPhone 16': {
     viewport: { width: 393, height: 852 },
     userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
     deviceScaleFactor: 3,
     isMobile: true,
     hasTouch: true,
+    defaultBrowserType: 'chromium',
   },
   'iPhone 16 Pro Max': {
     viewport: { width: 430, height: 932 },
@@ -35,11 +28,12 @@ const CUSTOM_DEVICES: Record<string, DeviceConfig> = {
     deviceScaleFactor: 3,
     isMobile: true,
     hasTouch: true,
+    defaultBrowserType: 'chromium',
   },
 };
 
 // Helper to get device config
-export function getDeviceConfig(deviceName: string): any {
+function getDeviceConfig(deviceName: string): DeviceDescriptor | null {
   // 1. Check Playwright presets
   const preset = playwrightDevices[deviceName];
   if (preset) return preset;
@@ -127,7 +121,7 @@ async function main() {
 
     // 4. Process per Device
     for (const deviceName of TARGET_DEVICES) {
-      let deviceConfig = getDeviceConfig(deviceName);
+      let deviceConfig: DeviceDescriptor | null | undefined = getDeviceConfig(deviceName);
 
       if (!deviceConfig && deviceName === 'Desktop Chrome') {
           // Default viewport for Desktop Chrome
@@ -137,6 +131,7 @@ async function main() {
               deviceScaleFactor: 1,
               isMobile: false,
               hasTouch: false,
+              defaultBrowserType: 'chromium',
           };
       }
 
