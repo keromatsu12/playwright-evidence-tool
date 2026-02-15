@@ -6,12 +6,13 @@ import * as http from 'http';
 import { randomInt } from 'node:crypto';
 import handler from 'serve-handler';
 import { glob } from 'glob';
+import { fileURLToPath } from 'node:url';
 
 // --- Configuration ---
 const CONCURRENCY_LIMIT = 5; // Max concurrent pages open
 
 // --- Device Definitions ---
-type DeviceConfig = {
+export type DeviceConfig = {
   viewport: { width: number; height: number };
   userAgent: string;
   deviceScaleFactor: number;
@@ -38,7 +39,7 @@ const CUSTOM_DEVICES: Record<string, DeviceConfig> = {
 };
 
 // Helper to get device config
-function getDeviceConfig(deviceName: string): any {
+export function getDeviceConfig(deviceName: string): any {
   // 1. Check Playwright presets
   const preset = playwrightDevices[deviceName];
   if (preset) return preset;
@@ -268,4 +269,6 @@ async function processFile(context: BrowserContext, file: string, deviceName: st
   }
 }
 
-main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main();
+}
