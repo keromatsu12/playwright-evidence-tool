@@ -41,6 +41,18 @@ const CUSTOM_DEVICES: Record<string, DeviceDescriptor> = {
   },
 };
 
+// Helper to ensure directory exists (cached)
+export async function ensureDirectory(
+  dirPath: string,
+  createdDirs: Set<string>,
+): Promise<void> {
+  if (createdDirs.has(dirPath)) {
+    return;
+  }
+  await fs.promises.mkdir(dirPath, { recursive: true });
+  createdDirs.add(dirPath);
+}
+
 // Helper to get device config
 export function getDeviceConfig(deviceName: string): DeviceDescriptor | null {
   // 1. Check Playwright presets
@@ -129,6 +141,8 @@ async function main() {
     const browser = await chromium.launch();
 
     // 4. Process per Device
+    const createdDirs = new Set<string>();
+
     for (const deviceName of TARGET_DEVICES) {
       let deviceConfig: DeviceDescriptor | null | undefined =
         getDeviceConfig(deviceName);
@@ -165,7 +179,13 @@ async function main() {
         while (queue.length > 0) {
           const file = queue.shift();
           if (file) {
-            await processFile(context, file, deviceName, baseUrl);
+            await processFile(
+              context,
+              file,
+              deviceName,
+              baseUrl,
+              createdDirs,
+            );
           }
         }
       };
@@ -227,11 +247,12 @@ async function startServerWithRetry(
   throw new Error(`Could not find a free port after ${maxRetries} attempts.`);
 }
 
-async function processFile(
+export async function processFile(
   context: BrowserContext,
   file: string,
   deviceName: string,
   baseUrl: string,
+  createdDirs: Set<string>,
 ) {
   let page: Page | null = null;
   try {
@@ -263,7 +284,7 @@ async function processFile(
     const outputPath = path.join(outputDir, outputFileName);
 
     // Ensure dir exists
-    fs.mkdirSync(outputDir, { recursive: true });
+    await ensureDirectory(outputDir, createdDirs);
 
     // Navigate
     await page.goto(url, { waitUntil: "domcontentloaded" }); // Use domcontentloaded first, then wait for networkidle

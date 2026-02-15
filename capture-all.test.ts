@@ -1,6 +1,9 @@
-import { describe, it } from "node:test";
+import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
-import { getDeviceConfig } from "./capture-all.ts";
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
+import { getDeviceConfig, ensureDirectory } from "./capture-all.ts";
 
 describe("getDeviceConfig", () => {
   it("should return Playwright preset for standard devices", () => {
@@ -77,5 +80,54 @@ describe("getDeviceConfig", () => {
   it("should return null for unknown devices", () => {
     const config = getDeviceConfig("NonExistentDevice");
     assert.strictEqual(config, null);
+  });
+});
+
+describe("ensureDirectory", () => {
+  let tempDir: string;
+
+  before(async () => {
+    tempDir = await fs.promises.mkdtemp(
+      path.join(os.tmpdir(), "capture-all-test-"),
+    );
+  });
+
+  after(async () => {
+    if (tempDir) {
+      await fs.promises.rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("should create a directory and add it to the Set", async () => {
+    const createdDirs = new Set<string>();
+    const testDir = path.join(tempDir, "subdir1");
+
+    await ensureDirectory(testDir, createdDirs);
+
+    assert.ok(createdDirs.has(testDir));
+    assert.strictEqual(fs.existsSync(testDir), true);
+  });
+
+  it("should not error if directory already exists", async () => {
+    const createdDirs = new Set<string>();
+    const testDir = path.join(tempDir, "subdir2");
+    await fs.promises.mkdir(testDir); // Create it manually first
+
+    await ensureDirectory(testDir, createdDirs);
+
+    assert.ok(createdDirs.has(testDir));
+    assert.strictEqual(fs.existsSync(testDir), true);
+  });
+
+  it("should be idempotent (calling twice works)", async () => {
+    const createdDirs = new Set<string>();
+    const testDir = path.join(tempDir, "subdir3");
+
+    await ensureDirectory(testDir, createdDirs);
+    // Second call should return immediately because it's in the set
+    await ensureDirectory(testDir, createdDirs);
+
+    assert.ok(createdDirs.has(testDir));
+    assert.strictEqual(fs.existsSync(testDir), true);
   });
 });
