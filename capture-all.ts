@@ -3,13 +3,12 @@ import type { Browser, BrowserContext, Page } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as http from 'http';
+import { randomInt } from 'node:crypto';
 import handler from 'serve-handler';
 import { glob } from 'glob';
 
 // --- Configuration ---
 const CONCURRENCY_LIMIT = 5; // Max concurrent pages open
-const PORT = 3000 + Math.floor(Math.random() * 1000); // Random port between 3000-4000
-const BASE_URL = `http://localhost:${PORT}`;
 
 // --- Device Definitions ---
 type DeviceConfig = {
@@ -96,7 +95,6 @@ async function main() {
   }
 
   console.log(`Target Directory: ${absTargetDir}`);
-  console.log(`Starting local server on port ${PORT}...`);
 
   // 1. Start Local Server
   const server = http.createServer((request, response) => {
@@ -106,19 +104,9 @@ async function main() {
     });
   });
 
-  server.listen(PORT, () => {
-    console.log(`Server running at ${BASE_URL}`);
-  });
-
-  // Wait for server to be ready (a small delay is usually enough or just proceed)
-  // server.listen is async but the callback runs when ready.
-  // We can wrap in promise but usually fine as long as we don't hit it immediately.
-  // Actually, we should probably wrap it in a Promise to be safe.
-  await new Promise<void>((resolve) => {
-      if (server.listening) resolve();
-      else server.once('listening', () => resolve());
-  });
-
+  const port = await startServerWithRetry(server, 3000, 4000, 10);
+  const baseUrl = `http://localhost:${port}`;
+  console.log(`Server running at ${baseUrl}`);
 
   try {
     // 2. Find HTML Files
@@ -168,7 +156,7 @@ async function main() {
           while (queue.length > 0) {
               const file = queue.shift();
               if (file) {
-                  await processFile(context, file, deviceName, absTargetDir);
+                  await processFile(context, file, deviceName, baseUrl);
               }
           }
       };
@@ -195,7 +183,38 @@ async function main() {
   }
 }
 
-async function processFile(context: BrowserContext, file: string, deviceName: string, absTargetDir: string) {
+async function startServerWithRetry(server: http.Server, min: number, max: number, maxRetries: number): Promise<number> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const port = min + randomInt(max - min + 1);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const onListening = () => {
+          server.removeListener('error', onError);
+          resolve();
+        };
+        const onError = (err: any) => {
+          server.removeListener('listening', onListening);
+          reject(err);
+        };
+
+        server.once('listening', onListening);
+        server.once('error', onError);
+
+        server.listen(port);
+      });
+      return port;
+    } catch (err: any) {
+      if (err.code === 'EADDRINUSE') {
+        console.log(`Port ${port} is in use, retrying...`);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error(`Could not find a free port after ${maxRetries} attempts.`);
+}
+
+async function processFile(context: BrowserContext, file: string, deviceName: string, baseUrl: string) {
   let page: Page | null = null;
   try {
     page = await context.newPage();
@@ -210,7 +229,7 @@ async function processFile(context: BrowserContext, file: string, deviceName: st
     // Let's encode each segment.
     const encodedUrlPath = urlPath.split('/').map(encodeURIComponent).join('/');
 
-    const url = `${BASE_URL}/${encodedUrlPath}`;
+    const url = `${baseUrl}/${encodedUrlPath}`;
 
     // Output path
     // verification/[subdir]/[Device]_[Filename].png
