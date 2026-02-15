@@ -9,11 +9,8 @@ This tool automates the capture of **full-page screenshots** for all HTML files 
 Execute the following commands to install the required packages and browsers.
 
 ```bash
-# Initialize project (if not already done)
-npm init -y
-
 # Install dependencies
-npm install typescript ts-node playwright @types/node glob serve-handler
+npm install
 
 # Install Playwright browsers
 npx playwright install chromium
@@ -92,3 +89,12 @@ const CONCURRENCY_LIMIT = 5; // Change this value
 
 ### Adding Devices
 To add more devices, modify the `TARGET_DEVICES` array or `CUSTOM_DEVICES` object in `capture-all.ts`.
+
+## 5. Testing
+
+This project includes unit tests for the device configuration logic.
+
+```bash
+# Run unit tests
+npm test
+```

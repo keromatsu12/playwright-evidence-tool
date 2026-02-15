@@ -9,11 +9,8 @@
 以下のコマンドを実行して、必要なパッケージとブラウザをインストールしてください。
 
 ```bash
-# プロジェクトの初期化（まだ行っていない場合）
-npm init -y
-
 # 依存パッケージのインストール
-npm install typescript ts-node playwright @types/node glob serve-handler
+npm install
 
 # Playwrightブラウザのインストール
 npx playwright install chromium
@@ -92,3 +89,12 @@ const CONCURRENCY_LIMIT = 5; // この値を変更
 
 ### デバイスの追加
 デバイスを追加するには、`capture-all.ts` 内の `TARGET_DEVICES` 配列または `CUSTOM_DEVICES` オブジェクトを変更してください。
+
+## 5. テスト
+
+このプロジェクトには、デバイス設定ロジックのユニットテストが含まれています。
+
+```bash
+# ユニットテストの実行
+npm test
+```
