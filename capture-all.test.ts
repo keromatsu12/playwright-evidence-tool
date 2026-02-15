@@ -1,18 +1,18 @@
-import { describe, it } from 'node:test';
-import assert from 'node:assert';
-import { getDeviceConfig } from './capture-all.ts';
+import { describe, it } from "node:test";
+import assert from "node:assert";
+import { getDeviceConfig } from "./capture-all.ts";
 
-describe('getDeviceConfig', () => {
-  it('should return Playwright preset for standard devices', () => {
-    const config = getDeviceConfig('iPhone 12');
+describe("getDeviceConfig", () => {
+  it("should return Playwright preset for standard devices", () => {
+    const config = getDeviceConfig("iPhone 12");
     assert.ok(config);
-    assert.strictEqual(config.userAgent.includes('iPhone'), true);
+    assert.strictEqual(config.userAgent.includes("iPhone"), true);
     assert.strictEqual(config.isMobile, true);
   });
 
-  it('should return Playwright preset for iPhone 15', () => {
+  it("should return Playwright preset for iPhone 15", () => {
     // iPhone 15 is now in Playwright, so it should be returned directly
-    const config = getDeviceConfig('iPhone 15');
+    const config = getDeviceConfig("iPhone 15");
     assert.ok(config);
     assert.strictEqual(config.isMobile, true);
     // Ensure it is NOT our custom config (which has height 852)
@@ -20,62 +20,62 @@ describe('getDeviceConfig', () => {
     // We just assert it exists.
   });
 
-  it('should return custom configuration for iPhone 16', () => {
-    const config = getDeviceConfig('iPhone 16');
+  it("should return custom configuration for iPhone 16", () => {
+    const config = getDeviceConfig("iPhone 16");
     assert.ok(config);
     assert.deepStrictEqual(config.viewport, { width: 393, height: 852 });
     assert.strictEqual(config.deviceScaleFactor, 3);
-    assert.strictEqual(config.userAgent.includes('iPhone OS 18_0'), true);
+    assert.strictEqual(config.userAgent.includes("iPhone OS 18_0"), true);
   });
 
-  it('should return custom configuration for iPhone 16 Pro Max', () => {
-    const config = getDeviceConfig('iPhone 16 Pro Max');
+  it("should return custom configuration for iPhone 16 Pro Max", () => {
+    const config = getDeviceConfig("iPhone 16 Pro Max");
     assert.ok(config);
     assert.deepStrictEqual(config.viewport, { width: 430, height: 932 });
     assert.strictEqual(config.deviceScaleFactor, 3);
   });
 
-  it('should trigger fallback logic for unknown iPhone 15 variants', () => {
+  it("should trigger fallback logic for unknown iPhone 15 variants", () => {
     // 'iPhone 15 Custom' is not in Playwright, so it hits the custom logic
-    const config = getDeviceConfig('iPhone 15 Custom');
+    const config = getDeviceConfig("iPhone 15 Custom");
     // Should map to iPhone 16 custom config
-    const expected = getDeviceConfig('iPhone 16');
+    const expected = getDeviceConfig("iPhone 16");
     assert.deepStrictEqual(config, expected);
   });
 
-  it('should trigger fallback logic for unknown iPhone 16 variants', () => {
+  it("should trigger fallback logic for unknown iPhone 16 variants", () => {
     // 'iPhone 16 Future' is not in Playwright
-    const config = getDeviceConfig('iPhone 16 Future');
+    const config = getDeviceConfig("iPhone 16 Future");
     // Should map to iPhone 16 custom config
-    const expected = getDeviceConfig('iPhone 16');
+    const expected = getDeviceConfig("iPhone 16");
     assert.deepStrictEqual(config, expected);
   });
 
-  it('should trigger fallback logic for unknown Pro Max variants', () => {
+  it("should trigger fallback logic for unknown Pro Max variants", () => {
     // 'iPhone 16 Pro Max Future' or 'iPhone 15 Pro Max Custom'
-    const config = getDeviceConfig('iPhone 15 Pro Max Custom');
+    const config = getDeviceConfig("iPhone 15 Pro Max Custom");
     // Should map to iPhone 16 Pro Max
-    const expected = getDeviceConfig('iPhone 16 Pro Max');
+    const expected = getDeviceConfig("iPhone 16 Pro Max");
     assert.deepStrictEqual(config, expected);
   });
 
-  it('should trigger fallback logic for Plus variants', () => {
-    const config = getDeviceConfig('iPhone 15 Plus Custom');
+  it("should trigger fallback logic for Plus variants", () => {
+    const config = getDeviceConfig("iPhone 15 Plus Custom");
     // Should map to iPhone 16 Pro Max (as per logic)
-    const expected = getDeviceConfig('iPhone 16 Pro Max');
+    const expected = getDeviceConfig("iPhone 16 Pro Max");
     assert.deepStrictEqual(config, expected);
   });
 
-  it('should return Playwright preset for Desktop Chrome', () => {
-    const config = getDeviceConfig('Desktop Chrome');
+  it("should return Playwright preset for Desktop Chrome", () => {
+    const config = getDeviceConfig("Desktop Chrome");
     assert.ok(config);
     assert.strictEqual(config.viewport.width, 1280);
     assert.strictEqual(config.viewport.height, 720);
     assert.strictEqual(config.isMobile, false);
   });
 
-  it('should return null for unknown devices', () => {
-    const config = getDeviceConfig('NonExistentDevice');
+  it("should return null for unknown devices", () => {
+    const config = getDeviceConfig("NonExistentDevice");
     assert.strictEqual(config, null);
   });
 });

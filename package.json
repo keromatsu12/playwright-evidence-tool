@@ -26,5 +26,8 @@
     "serve-handler": "^6.1.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
   }
 }
