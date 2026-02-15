@@ -6,6 +6,7 @@ import * as http from 'http';
 import { randomInt } from 'node:crypto';
 import handler from 'serve-handler';
 import { glob } from 'glob';
+import { fileURLToPath } from 'node:url';
 
 // --- Configuration ---
 const CONCURRENCY_LIMIT = 5; // Max concurrent pages open
@@ -263,4 +264,6 @@ async function processFile(context: BrowserContext, file: string, deviceName: st
   }
 }
 
-main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main();
+}
