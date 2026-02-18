@@ -104,31 +104,41 @@ async function main() {
   }
 
   const absTargetDir = path.resolve(targetDirArg);
-
-  if (!fs.existsSync(absTargetDir)) {
+  let realTargetDir: string;
+  try {
+    realTargetDir = fs.realpathSync(absTargetDir);
+  } catch (e) {
     console.error(`Error: Target directory does not exist: ${absTargetDir}`);
     process.exit(1);
   }
 
-  console.log(`Target Directory: ${absTargetDir}`);
+  if (!fs.statSync(realTargetDir).isDirectory()) {
+    console.error(`Error: Target is not a directory: ${realTargetDir}`);
+    process.exit(1);
+  }
+
+  console.log(`Target Directory: ${realTargetDir}`);
 
   // 1. Start Local Server
   const server = http.createServer((request, response) => {
     return handler(request, response, {
-      public: absTargetDir,
+      public: realTargetDir,
       cleanUrls: false,
+      directoryListing: false,
+      symlinks: false, // Security: Do not follow symlinks
     });
   });
 
-  const port = await startServerWithRetry(server, 3000, 4000, 10);
-  const baseUrl = `http://localhost:${port}`;
+  const LOCAL_HOST = "127.0.0.1";
+  const port = await startServerWithRetry(server, 3000, 4000, 10, LOCAL_HOST);
+  const baseUrl = `http://${LOCAL_HOST}:${port}`;
   console.log(`Server running at ${baseUrl}`);
 
   try {
     // 2. Find HTML Files
     console.log("Scanning for HTML files...");
     // glob returns Promise<string[]> in v13? Or we use glob.glob
-    const files = await glob("**/*.html", { cwd: absTargetDir });
+    const files = await glob("**/*.html", { cwd: realTargetDir });
 
     if (files.length === 0) {
       console.log("No HTML files found.");
@@ -216,6 +226,7 @@ async function startServerWithRetry(
   min: number,
   max: number,
   maxRetries: number,
+  host: string = "127.0.0.1",
 ): Promise<number> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const port = min + randomInt(max - min + 1);
@@ -233,7 +244,7 @@ async function startServerWithRetry(
         server.once("listening", onListening);
         server.once("error", onError);
 
-        server.listen(port);
+        server.listen(port, host);
       });
       return port;
     } catch (err: any) {
@@ -256,6 +267,11 @@ export async function processFile(
 ) {
   let page: Page | null = null;
   try {
+    // Security check: ensure file path doesn't contain traversal or absolute path
+    if (file.includes("..") || path.isAbsolute(file)) {
+      throw new Error(`Invalid file path detected (security restriction): ${file}`);
+    }
+
     page = await context.newPage();
 
     // Construct URL
