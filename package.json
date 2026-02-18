@@ -6,18 +6,10 @@
   "scripts": {
     "test": "ts-node capture-all.test.ts"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/keromatsu12/playwright-evidence-tool.git"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
-  "bugs": {
-    "url": "https://github.com/keromatsu12/playwright-evidence-tool/issues"
-  },
-  "homepage": "https://github.com/keromatsu12/playwright-evidence-tool#readme",
   "dependencies": {
     "@types/node": "^25.2.3",
     "@types/serve-handler": "^6.1.4",
