@@ -3,7 +3,7 @@ import assert from "node:assert";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import { getDeviceConfig, ensureDirectory } from "./capture-all.ts";
+import { getDeviceConfig, ensureDirectory, validateTargetDir } from "./capture-all.ts";
 
 describe("getDeviceConfig", () => {
   it("should return Playwright preset for standard devices", () => {
@@ -129,5 +129,49 @@ describe("ensureDirectory", () => {
 
     assert.ok(createdDirs.has(testDir));
     assert.strictEqual(fs.existsSync(testDir), true);
+  });
+});
+
+describe("validateTargetDir", () => {
+  let tempDir: string;
+
+  before(async () => {
+    tempDir = await fs.promises.mkdtemp(
+      path.join(os.tmpdir(), "capture-all-validation-"),
+    );
+  });
+
+  after(async () => {
+    if (tempDir) {
+      await fs.promises.rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("should return the resolved path for a valid directory", () => {
+    const validDir = path.join(tempDir, "valid");
+    fs.mkdirSync(validDir);
+    const result = validateTargetDir(validDir);
+    assert.strictEqual(result, fs.realpathSync(validDir));
+  });
+
+  it("should throw error if argument is missing", () => {
+    assert.throws(() => {
+      validateTargetDir(undefined);
+    }, /Target directory is required/);
+  });
+
+  it("should throw error if directory does not exist", () => {
+    const invalidDir = path.join(tempDir, "nonexistent");
+    assert.throws(() => {
+      validateTargetDir(invalidDir);
+    }, /Target directory does not exist/);
+  });
+
+  it("should throw error if path is not a directory", () => {
+    const filePath = path.join(tempDir, "file.txt");
+    fs.writeFileSync(filePath, "content");
+    assert.throws(() => {
+      validateTargetDir(filePath);
+    }, /Target is not a directory/);
   });
 });

@@ -71,6 +71,29 @@ export function getDeviceConfig(deviceName: string): DeviceDescriptor | null {
   return null;
 }
 
+// Helper to validate target directory
+export function validateTargetDir(targetDirArg: string | undefined): string {
+  if (!targetDirArg) {
+    throw new Error(
+      "Error: Target directory is required.\nUsage: ts-node capture-all.ts <target-directory>",
+    );
+  }
+
+  const absTargetDir = path.resolve(targetDirArg);
+  let realTargetDir: string;
+  try {
+    realTargetDir = fs.realpathSync(absTargetDir);
+  } catch (e) {
+    throw new Error(`Error: Target directory does not exist: ${absTargetDir}`);
+  }
+
+  if (!fs.statSync(realTargetDir).isDirectory()) {
+    throw new Error(`Error: Target is not a directory: ${realTargetDir}`);
+  }
+
+  return realTargetDir;
+}
+
 // Target Devices List
 const TARGET_DEVICES = [
   "Desktop Chrome",
@@ -95,25 +118,11 @@ const TARGET_DEVICES = [
 // --- Main Script ---
 
 async function main() {
-  const targetDirArg = process.argv[2];
-
-  if (!targetDirArg) {
-    console.error("Error: Target directory is required.");
-    console.error("Usage: ts-node capture-all.ts <target-directory>");
-    process.exit(1);
-  }
-
-  const absTargetDir = path.resolve(targetDirArg);
   let realTargetDir: string;
   try {
-    realTargetDir = fs.realpathSync(absTargetDir);
-  } catch (e) {
-    console.error(`Error: Target directory does not exist: ${absTargetDir}`);
-    process.exit(1);
-  }
-
-  if (!fs.statSync(realTargetDir).isDirectory()) {
-    console.error(`Error: Target is not a directory: ${realTargetDir}`);
+    realTargetDir = validateTargetDir(process.argv[2]);
+  } catch (err: any) {
+    console.error(err.message);
     process.exit(1);
   }
 
