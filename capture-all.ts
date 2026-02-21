@@ -53,6 +53,22 @@ export async function ensureDirectory(
   createdDirs.add(dirPath);
 }
 
+// Helper to validate target directory
+export function validateDirectory(targetDirArg: string): string {
+  const absTargetDir = path.resolve(targetDirArg);
+  let realTargetDir: string;
+  try {
+    realTargetDir = fs.realpathSync(absTargetDir);
+  } catch (e) {
+    throw new Error(`Target directory does not exist: ${absTargetDir}`);
+  }
+
+  if (!fs.statSync(realTargetDir).isDirectory()) {
+    throw new Error(`Target is not a directory: ${realTargetDir}`);
+  }
+  return realTargetDir;
+}
+
 // Helper to get device config
 export function getDeviceConfig(deviceName: string): DeviceDescriptor | null {
   // 1. Check Playwright presets
@@ -103,17 +119,11 @@ async function main() {
     process.exit(1);
   }
 
-  const absTargetDir = path.resolve(targetDirArg);
   let realTargetDir: string;
   try {
-    realTargetDir = fs.realpathSync(absTargetDir);
-  } catch (e) {
-    console.error(`Error: Target directory does not exist: ${absTargetDir}`);
-    process.exit(1);
-  }
-
-  if (!fs.statSync(realTargetDir).isDirectory()) {
-    console.error(`Error: Target is not a directory: ${realTargetDir}`);
+    realTargetDir = validateDirectory(targetDirArg);
+  } catch (e: any) {
+    console.error(`Error: ${e.message}`);
     process.exit(1);
   }
 
